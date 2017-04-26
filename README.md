@@ -6,6 +6,7 @@ It also compared DQdD with Double DQN on the CarPole game, and the comparation s
 
 ## Comparation DQfD with Double DQN
 
+![image](http://github.com/go2sea/DQfD/raw/master/images/figure_1.png)
 
 
 
