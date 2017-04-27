@@ -17,7 +17,7 @@ At the end of training, the epsilion used in greedy_action is 0.1, and thats the
 
 An improvement of the Double DQN is pre-training. DQfD initially trains solely on the demonstration data before starting any interaction with the environment. This code used a network fine trained by Double DQN to generate the demo data.
 
-You can see the details in the function:
+You can see the details in function:
 ```
   get_demo_data()
 ```
