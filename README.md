@@ -10,6 +10,7 @@ It also compared DQdD with Double DQN on the CarPole game, and the comparation s
 ![figure_2](/images/figure_2.png)
 ![figure_3](/images/figure_3.png)
 
+At the end of training, the epsilion used in greedy_action is 0.1, and thats the reason why the curves is not stable.
 
 
 ## Get the expert demo data
