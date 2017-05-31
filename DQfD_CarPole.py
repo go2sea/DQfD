@@ -57,20 +57,20 @@ class DQfD_DDQN():
         print('pre-train finish ...')
 
     def create_network(self):
-        def build_layers(state, c_names, n_l1, n_l2, w_initializer, b_initializer):
+        def build_layers(state, c_names, n_l1, n_l2, w_initializer, b_initializer, regularizer=None):
             with tf.variable_scope('l1'):
-                w1 = tf.get_variable('w1', [self.state_dim, n_l1], initializer=w_initializer, collections=c_names)
-                b1 = tf.get_variable('b1', [1, n_l1], initializer=b_initializer, collections=c_names)
+                w1 = tf.get_variable('w1', [self.state_dim, n_l1], initializer=w_initializer, collections=c_names, regularizer=regularizer)
+                b1 = tf.get_variable('b1', [1, n_l1], initializer=b_initializer, collections=c_names, regularizer=regularizer)
                 l1 = tf.nn.relu(tf.matmul(state, w1) + b1)
 
             with tf.variable_scope('l2'):
-                w2 = tf.get_variable('w21', [n_l1, n_l2], initializer=w_initializer, collections=c_names)
-                b2 = tf.get_variable('b2', [1, n_l2], initializer=b_initializer, collections=c_names)
+                w2 = tf.get_variable('w2', [n_l1, n_l2], initializer=w_initializer, collections=c_names, regularizer=regularizer)
+                b2 = tf.get_variable('b2', [1, n_l2], initializer=b_initializer, collections=c_names, regularizer=regularizer)
                 l2 = tf.nn.relu(tf.matmul(l1, w2) + b2)
 
             with tf.variable_scope('l3'):
-                w3 = tf.get_variable('w3', [n_l2, self.action_dim], initializer=w_initializer, collections=c_names)
-                b3 = tf.get_variable('b3', [1, self.action_dim], initializer=b_initializer, collections=c_names)
+                w3 = tf.get_variable('w3', [n_l2, self.action_dim], initializer=w_initializer, collections=c_names, regularizer=regularizer)
+                b3 = tf.get_variable('b3', [1, self.action_dim], initializer=b_initializer, collections=c_names, regularizer=regularizer)
                 out = tf.matmul(l2, w3) + b3
 
             return out
@@ -78,10 +78,12 @@ class DQfD_DDQN():
         # --------------------- build select network ----------------------
         self.select_input = tf.placeholder("float", [None, self.state_dim])
         with tf.variable_scope('select_net'):
-            c_names = ['select_net_params', tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.REGULARIZATION_LOSSES]  # 注意：只有select网络的参数添加到正则化collection中
+            # c_names = ['select_net_params', tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.REGULARIZATION_LOSSES]  # 注意：只有select网络的参数添加到正则化collection中
+            c_names = ['select_net_params', tf.GraphKeys.GLOBAL_VARIABLES]
             w_initializer = tf.random_uniform_initializer(-0.1, 0.1)
             b_initializer = tf.constant_initializer(0.1)
-            self.Q_select = build_layers(self.select_input, c_names, 24, 24, w_initializer, b_initializer)
+            regularizer = tf.contrib.layers.l2_regularizer(scale=0.2)  # 注意：只有select网络有l2正则化
+            self.Q_select = build_layers(self.select_input, c_names, 24, 24, w_initializer, b_initializer, regularizer)
         # --------------------- build eval network ----------------------
         self.eval_input = tf.placeholder("float", [None, self.state_dim])
         with tf.variable_scope('eval_net'):
