@@ -11,7 +11,7 @@ from collections import deque
 import pickle
 import copy
 
-# Hyper Parameters for DQN
+# Hyper Parameters
 GAMMA = 0.99  # discount factor for target Q
 INITIAL_EPSILON = 1.0  # starting value of epsilon
 FINAL_EPSILON = 0.01  # final value of epsilon
