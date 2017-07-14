@@ -208,7 +208,7 @@ class DQfDDDQN:
             self.action_batch: action_batch,
             self.isdemo: demo_data
         })
-        # 此例中一局步数有限，因此可以外部控制一局结束后update ，此处可以不控制
+        # 此例中一局步数有限，因此可以外部控制一局结束后update ，update为false时在外部控制
         if update and self.time_step % self.config.UPDATE_TARGET_NET == 0:
             self.sess.run(self.update_target_net)
 

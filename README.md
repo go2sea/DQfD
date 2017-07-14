@@ -27,32 +27,22 @@ You can see the details in function:
 For comparation, I first trained an network through Double DQN, witch has the same parameters with the DQfD.
 ```
     # --------------------------  get DDQN scores ----------------------------------
-    ddqn_sum_scores = np.zeros(episode_limit)
-    for i in range(iteration):
-        scores = run_DDQN(i, episode_limit, env)
-        for e in range(episode_limit):
-            ddqn_sum_scores[e] += scores[e]
-    ddqn_mean_scores = ddqn_sum_scores / iteration
-    # write the scores to a file
-    with open('/Users/mahailong/DQfD/ddqn_mean_scores.p', 'wb') as f:
-        pickle.dump(ddqn_mean_scores, f, protocol=2)
+    ddqn_sum_scores = np.zeros(Config.episode)
+    for i in range(Config.iteration):
+        scores = run_DDQN(i, env)
+        ddqn_sum_scores = [a + b for a, b in zip(scores, ddqn_sum_scores)]
+    ddqn_mean_scores = ddqn_sum_scores / Config.iteration
 ```
 
 ## Get DQfD scores
 
 ```
     # ----------------------------- get DQfD scores --------------------------------
-    dqfd_sum_scores = np.zeros(episode_limit)
-    for i in range(iteration):
-        scores = run_DQfD(i, episode_limit, env)
-        for e in range(episode_limit):
-            dqfd_sum_scores[e] += scores[e]
-    dqfd_mean_scores = dqfd_sum_scores / iteration
-    # write the scores to a file
-    with open('/Users/mahailong/DQfD/dqfd_mean_scores.p', 'wb') as f:
-        pickle.dump(dqfd_mean_scores, f, protocol=2)
-
-    map(dqfd_scores=dqfd_mean_scores, ddqn_scores=ddqn_mean_scores, xlabel='Red: dqfd         Blue: ddqn', ylabel='Scores')
+    dqfd_sum_scores = np.zeros(Config.episode)
+    for i in range(Config.iteration):
+        scores = run_DQfD(i, env)
+        dqfd_sum_scores = [a + b for a, b in zip(scores, dqfd_sum_scores)]
+    dqfd_mean_scores = dqfd_sum_scores / Config.iteration
 ```
 ## Map
 
