@@ -2,9 +2,6 @@
 
 
 class Config:
-    iteration = 5
-    episode = 300  # 300 games per iteration
-
     ENV_NAME = "CartPole-v1"
     GAMMA = 0.99  # discount factor for target Q
     INITIAL_EPSILON = 1.0  # starting value of epsilon
@@ -19,9 +16,13 @@ class Config:
     LAMBDA_2 = 10e-5
     PRETRAIN_STEPS = 1000
     MODEL_PATH = './model/DQfDDDQN_model'
-    replay_buffer_size = 2000
+    DEMO_DATA_PATH = '/Users/mahailong/DQfD/demo.p'
 
+    replay_buffer_size = 2000
     demo_buffer_size = 500 * 50
+    iteration = 5
+    episode = 300  # 300 games per iteration
+
 
 class DDQNConfig(Config):
     demo_mode = 'get_demo'
@@ -30,27 +31,5 @@ class DDQNConfig(Config):
 class DQfDConfig(Config):
     demo_mode = 'use_demo'
     demo_num = int(Config.BATCH_SIZE * Config.DEMO_RATIO)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
