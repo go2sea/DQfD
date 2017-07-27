@@ -196,7 +196,7 @@ class DQfDDDQN:
 
         y_batch = np.zeros((self.config.BATCH_SIZE, self.action_dim))
         for i in range(0, self.config.BATCH_SIZE):
-            temp = self.Q_select.eval(feed_dict={self.select_input: state_batch[i].reshape((-1, 4))})[0]
+            temp = self.Q_select.eval(feed_dict={self.select_input: state_batch[i].reshape((-1, self.state_dim))})[0]
             action = np.argmax(Q_select[i])
             temp[action_batch[i]] = reward_batch[i] + (1 - done[i]) * self.config.GAMMA * Q_eval[i][action]
             y_batch[i] = temp
