@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 
 
 class Config:
@@ -12,16 +13,16 @@ class Config:
     UPDATE_TARGET_NET = 200  # update eval_network params every 200 steps
     LEARNING_RATE = 0.001
     DEMO_RATIO = 0.1
-    LAMBDA_1 = 1.0
-    LAMBDA_2 = 10e-5
+    LAMBDA = [0.6, 0.4, 1.0, 10e-5]  # for [loss_dq, loss_n_step_dq, loss_jeq, loss_l2]
     PRETRAIN_STEPS = 1000
-    MODEL_PATH = './model/DQfDDDQN_model'
-    DEMO_DATA_PATH = '/Users/mahailong/DQfD/demo.p'
+    MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model/DQfD_model')
+    DEMO_DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'demo.p')
 
-    replay_buffer_size = 2000
-    demo_buffer_size = 500 * 50
+    demo_buffer_size = 500 * 10
+    replay_buffer_size = demo_buffer_size * 5
     iteration = 5
-    episode = 300  # 300 games per iteration
+    episode = 400  # 300 games per iteration
+    trajectory_n = 10  # for n-step TD-loss (both demo data and generated data)
 
 
 class DDQNConfig(Config):

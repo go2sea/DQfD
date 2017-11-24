@@ -130,9 +130,9 @@ class DQfDDDQN:
         loss_jeq = self.loss_jeq(self.Q_select)
         loss_l2 = tf.reduce_sum([tf.reduce_mean(reg_l) for reg_l in tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)])
         if self.demo_mode == 'get_demo':
-            return loss_dq + self.config.LAMBDA_2 * loss_l2
+            return loss_dq + self.config.LAMBDA[3] * loss_l2
         if self.demo_mode == 'use_demo':
-            return loss_dq + self.config.LAMBDA_1 * loss_jeq + self.config.LAMBDA_2 * loss_l2
+            return loss_dq + self.config.LAMBDA[2] * loss_jeq + self.config.LAMBDA[3] * loss_l2
         assert False
 
     @lazy_property
@@ -153,10 +153,10 @@ class DQfDDDQN:
         self.saver.restore(self.sess, self.config.MODEL_PATH)
         print("Model restored.")
 
-    def perceive(self, state, action, reward, next_state, done, demo):
+    def perceive(self, transition):
         # epsilon是不断变小的，也就是随机性不断变小:开始需要更多的探索，所以动作偏随机，之后需要动作能够有效，因此减少随机。
         self.epsilon = max(self.config.FINAL_EPSILON, self.epsilon * self.config.EPSILIN_DECAY)
-        self.replay_buffer.append((state, action, reward, next_state, done, demo))  # 经验池添加
+        self.replay_buffer.append(transition)  # 经验池添加
 
     def train_Q_network(self, pre_train=False, update=True):
         """
