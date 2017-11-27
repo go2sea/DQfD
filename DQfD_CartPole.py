@@ -100,7 +100,7 @@ def run_DQfD(index, env):
                   .format(e, score, len(agent.replay_memory), agent.epsilon))
             # if np.mean(scores[-min(10, len(scores)):]) > 495:
             #     break
-            agent.save_model()
+            # agent.save_model()
     return scores
 
 
@@ -159,7 +159,7 @@ if __name__ == '__main__':
     env = gym.make(Config.ENV_NAME)
     # env = wrappers.Monitor(env, '/tmp/CartPole-v0', force=True)
     # ------------------------ get demo scores by DDQN -----------------------------
-    get_demo_data(env)
+    # get_demo_data(env)
     # --------------------------  get DDQN scores ----------------------------------
     # ddqn_sum_scores = np.zeros(Config.episode)
     # for i in range(Config.iteration):

@@ -126,13 +126,13 @@ class DQfDDDQN:
 
     @lazy_property
     def loss(self):
-        loss_dq = tf.reduce_mean(tf.squared_difference(self.Q_select, self.y_input))
-        loss_jeq = self.loss_jeq(self.Q_select)
-        loss_l2 = tf.reduce_sum([tf.reduce_mean(reg_l) for reg_l in tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)])
+        l_dq = tf.reduce_mean(tf.squared_difference(self.Q_select, self.y_input))
+        l_jeq = self.loss_jeq(self.Q_select)
+        l_l2 = tf.reduce_sum([tf.reduce_mean(reg_l) for reg_l in tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)])
         if self.demo_mode == 'get_demo':
-            return loss_dq + self.config.LAMBDA[3] * loss_l2
+            return l_dq + self.config.LAMBDA[3] * l_l2
         if self.demo_mode == 'use_demo':
-            return loss_dq + self.config.LAMBDA[2] * loss_jeq + self.config.LAMBDA[3] * loss_l2
+            return l_dq + self.config.LAMBDA[2] * l_jeq + self.config.LAMBDA[3] * l_l2
         assert False
 
     @lazy_property
