@@ -61,8 +61,7 @@ def run_DQfD(index, env):
         agent = DQfD(env, DQfDConfig(), demo_transitions=demo_transitions)
 
     agent.pre_train()  # use the demo data to pre-train network
-    scores = []
-    e, replay_full_episode = 0, None
+    scores, e, replay_full_episode = [], 0, None
     while True:
         done, score, n_step_reward, state = False, 0, None, env.reset()
         t_q = deque(maxlen=Config.trajectory_n)
@@ -88,7 +87,7 @@ def run_DQfD(index, env):
         if done:
             # handle transitions left in t_q
             t_q.popleft()  # first transition's n-step is already set
-            transitions = set_n_step(t_q)
+            transitions = set_n_step(t_q, Config.trajectory_n)
             for t in transitions:
                 agent.perceive(t)
                 if agent.replay_memory.full():
@@ -109,16 +108,17 @@ def run_DQfD(index, env):
     return scores
 
 
-def set_n_step(container):
+# extend [n_step_reward, n_step_away_state] for transitions in demo
+def set_n_step(container, n):
     t_list = list(container)
     # accumulated reward of first (trajectory_n-1) transitions
-    n_step_reward = sum([t[2]*Config.GAMMA**i for i, t in enumerate(t_list[0:min(len(t_list), Config.trajectory_n) - 1])])
+    n_step_reward = sum([t[2] * Config.GAMMA**i for i, t in enumerate(t_list[0:min(len(t_list), n) - 1])])
     for begin in range(len(t_list)):
         end = min(len(t_list) - 1, begin + Config.trajectory_n - 1)
         n_step_reward += t_list[end][2]*Config.GAMMA**(end-begin)
-        t_list[begin].extend([n_step_reward, t_list[end][3], t_list[end][4], end-begin+1])  # extend[n_reward, n_next_s, n_done, actual_n]
+        # extend[n_reward, n_next_s, n_done, actual_n]
+        t_list[begin].extend([n_step_reward, t_list[end][3], t_list[end][4], end-begin+1])
         n_step_reward = (n_step_reward - t_list[begin][2])/Config.GAMMA
-        # assert len(t_list[begin]) == 10
     return t_list
 
 
@@ -145,13 +145,12 @@ def get_demo_data(env):
             state = next_state
         if done:
             if score == 500:  # expert demo data
-                demo = set_n_step(demo)  # extend [n_step_reward, n_step_away_state] for transitions in demo
+                demo = set_n_step(demo, Config.trajectory_n)
                 agent.demo_buffer.extend(demo)
             agent.sess.run(agent.update_target_net)
             print("episode:", e, "  score:", score, "  demo_buffer:", len(agent.demo_buffer),
                   "  memory length:", len(agent.replay_buffer), "  epsilon:", agent.epsilon)
             if len(agent.demo_buffer) >= Config.demo_buffer_size:
-                # agent.demo_buffer = agent.demo_buffer[:Config.demo_buffer_size]
                 agent.demo_buffer = deque(itertools.islice(agent.demo_buffer, 0, Config.demo_buffer_size))
                 break
         e += 1

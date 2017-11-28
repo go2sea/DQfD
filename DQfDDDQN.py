@@ -19,6 +19,11 @@ def lazy_property(func):
 
 
 class DQfDDDQN:
+    """
+    DQfDDQN is an implementation of Deep Q-learning from Demonstrations(Learning from Demonstrations for RealWorld
+    Reinforcement Learning)'s Version-1.
+    """
+
     def __init__(self, env, config):
         self.sess = tf.InteractiveSession()
         self.config = config
@@ -78,8 +83,9 @@ class DQfDDDQN:
     #     return dense3
 
     def build_layers(self, state, c_names, units_1, units_2, w_i, b_i, reg=None):
+        a_d = self.action_dim
         with tf.variable_scope('l1'):
-            w1 = tf.get_variable('w1', [self.state_dim, units_1], initializer=w_i, collections=c_names, regularizer=reg)
+            w1 = tf.get_variable('w1', [a_d, units_1], initializer=w_i, collections=c_names, regularizer=reg)
             b1 = tf.get_variable('b1', [1, units_1], initializer=b_i, collections=c_names, regularizer=reg)
             dense1 = tf.nn.relu(tf.matmul(state, w1) + b1)
         with tf.variable_scope('l2'):
@@ -87,8 +93,8 @@ class DQfDDDQN:
             b2 = tf.get_variable('b2', [1, units_2], initializer=b_i, collections=c_names, regularizer=reg)
             dense2 = tf.nn.relu(tf.matmul(dense1, w2) + b2)
         with tf.variable_scope('l3'):
-            w3 = tf.get_variable('w3', [units_2, self.action_dim], initializer=w_i, collections=c_names, regularizer=reg)
-            b3 = tf.get_variable('b3', [1, self.action_dim], initializer=b_i, collections=c_names, regularizer=reg)
+            w3 = tf.get_variable('w3', [units_2, a_d], initializer=w_i, collections=c_names, regularizer=reg)
+            b3 = tf.get_variable('b3', [1, a_d], initializer=b_i, collections=c_names, regularizer=reg)
             dense3 = tf.matmul(dense2, w3) + b3
         return dense3
 

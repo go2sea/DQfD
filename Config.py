@@ -13,7 +13,7 @@ class Config:
     UPDATE_TARGET_NET = 10000  # update eval_network params every 200 steps
     LEARNING_RATE = 0.001
     DEMO_RATIO = 0.1
-    LAMBDA = [1.0, 0.0, 1.0, 10e-5]  # for [loss_dq, loss_n_step_dq, loss_jeq, loss_l2]
+    LAMBDA = [1.0, 0.0, 1.0, 10e-5]  # for [loss_dq, loss_n_dq, loss_jeq, loss_l2]
     PRETRAIN_STEPS = 5000  # 750000
     MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model/DQfD_model')
     DEMO_DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'demo.p')

@@ -88,8 +88,9 @@ class DQfD:
     #     return dense3
 
     def build_layers(self, state, c_names, units_1, units_2, w_i, b_i, reg=None):
+        a_d = self.action_dim
         with tf.variable_scope('l1'):
-            w1 = tf.get_variable('w1', [self.state_dim, units_1], initializer=w_i, collections=c_names, regularizer=reg)
+            w1 = tf.get_variable('w1', [a_d, units_1], initializer=w_i, collections=c_names, regularizer=reg)
             b1 = tf.get_variable('b1', [1, units_1], initializer=b_i, collections=c_names, regularizer=reg)
             dense1 = tf.nn.relu(tf.matmul(state, w1) + b1)
         with tf.variable_scope('l2'):
@@ -97,8 +98,8 @@ class DQfD:
             b2 = tf.get_variable('b2', [1, units_2], initializer=b_i, collections=c_names, regularizer=reg)
             dense2 = tf.nn.relu(tf.matmul(dense1, w2) + b2)
         with tf.variable_scope('l3'):
-            w3 = tf.get_variable('w3', [units_2, self.action_dim], initializer=w_i, collections=c_names, regularizer=reg)
-            b3 = tf.get_variable('b3', [1, self.action_dim], initializer=b_i, collections=c_names, regularizer=reg)
+            w3 = tf.get_variable('w3', [units_2, a_d], initializer=w_i, collections=c_names, regularizer=reg)
+            b3 = tf.get_variable('b3', [1, a_d], initializer=b_i, collections=c_names, regularizer=reg)
             dense3 = tf.matmul(dense2, w3) + b3
         return dense3
 
@@ -108,8 +109,8 @@ class DQfD:
             c_names = ['select_net_params', tf.GraphKeys.GLOBAL_VARIABLES]
             w_i = tf.random_uniform_initializer(-0.1, 0.1)
             b_i = tf.constant_initializer(0.1)
-            regularizer = tf.contrib.layers.l2_regularizer(scale=0.2)  # 注意：只有select网络有l2正则化
-            return self.build_layers(self.select_input, c_names, 24, 24, w_i, b_i, regularizer)
+            reg = tf.contrib.layers.l2_regularizer(scale=0.2)  # Note: only parameters in select-net need L2
+            return self.build_layers(self.select_input, c_names, 24, 24, w_i, b_i, reg)
 
     @lazy_property
     def Q_eval(self):
@@ -132,21 +133,14 @@ class DQfD:
             jeq += self.isdemo[i] * (max_value - Q_select[i][ae])
         return jeq
 
-    def loss_n_step_dq(self, Q_select, n_step_y):
-        n_step_loss = 0.
-        for i in range(self.config.BATCH_SIZE):
-            n_y = n_step_y[i]
-            n_step_loss += self.isdemo[i] * tf.reduce_mean(tf.squared_difference(n_y, Q_select[i]))  # n_step_loss is only for demo data ?
-        return n_step_loss
-
     @lazy_property
     def loss(self):
         l_dq = tf.reduce_mean(tf.squared_difference(self.Q_select, self.y_input))
-        l_n_step_dq = tf.reduce_mean(tf.squared_difference(self.Q_select, self.n_step_y_input))
+        l_n_dq = tf.reduce_mean(tf.squared_difference(self.Q_select, self.n_step_y_input))
         # l_n_step_dq = self.loss_n_step_dq(self.Q_select, self.n_step_y_input)
         l_jeq = self.loss_jeq(self.Q_select)
         l_l2 = tf.reduce_sum([tf.reduce_mean(reg_l) for reg_l in tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)])
-        return self.ISWeights * tf.reduce_sum([l*lam for l, lam in zip([l_dq, l_n_step_dq, l_jeq, l_l2], self.config.LAMBDA)])
+        return self.ISWeights * tf.reduce_sum([l * λ for l, λ in zip([l_dq, l_n_dq, l_jeq, l_l2], self.config.LAMBDA)])
 
     @lazy_property
     def abs_errors(self):
@@ -220,7 +214,8 @@ class DQfD:
             y_batch[i] = temp
             # add n-step reward
             action = np.argmax(n_step_Q_select[i])
-            temp_0[action_batch[i]] = n_step_reward_batch[i] + (1 - int(n_step_done_batch[i])) * self.config.GAMMA**actual_n[i] * n_step_Q_eval[i][action]
+            q_n_step = (1 - int(n_step_done_batch[i])) * self.config.GAMMA**actual_n[i] * n_step_Q_eval[i][action]
+            temp_0[action_batch[i]] = n_step_reward_batch[i] + q_n_step
             n_step_y_batch[i] = temp_0
 
         _, abs_errors = self.sess.run([self.optimize, self.abs_errors],
