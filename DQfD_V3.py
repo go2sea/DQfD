@@ -22,10 +22,10 @@ class DQfD:
     def __init__(self, env, config, demo_transitions=None):
         self.sess = tf.InteractiveSession()
         self.config = config
-        self.demo_transitions = demo_transitions if demo_transitions is not None else []
-        # init experience replay
+        # replay_memory stores both demo data and generated data, while demo_memory only store demo data
         self.replay_memory = Memory(capacity=self.config.replay_buffer_size, permanent_data=len(demo_transitions))
-        self.add_demo_to_memory()
+        self.demo_memory = Memory(capacity=self.config.demo_buffer_size, permanent_data=self.config.demo_buffer_size)
+        self.add_demo_to_memory(demo_transitions=demo_transitions)  # add demo data to both demo_memory & replay_memory
         self.time_step = 0
         self.epsilon = self.config.INITIAL_EPSILON
         self.state_dim = env.observation_space.shape[0]
@@ -54,8 +54,10 @@ class DQfD:
         self.save_model()
         self.restore_model()
 
-    def add_demo_to_memory(self):
-        for t in self.demo_transitions:
+    def add_demo_to_memory(self, demo_transitions):
+        # add demo data to both demo_memory & replay_memory
+        for t in demo_transitions:
+            self.demo_memory.store(np.array(t, dtype=object))
             self.replay_memory.store(np.array(t, dtype=object))
             assert len(t) == 10
 
@@ -130,10 +132,18 @@ class DQfD:
             jeq += self.isdemo[i] * (max_value - Q_select[i][ae])
         return jeq
 
+    def loss_n_step_dq(self, Q_select, n_step_y):
+        n_step_loss = 0.
+        for i in range(self.config.BATCH_SIZE):
+            n_y = n_step_y[i]
+            n_step_loss += self.isdemo[i] * tf.reduce_mean(tf.squared_difference(n_y, Q_select[i]))  # n_step_loss is only for demo data ?
+        return n_step_loss
+
     @lazy_property
     def loss(self):
         l_dq = tf.reduce_mean(tf.squared_difference(self.Q_select, self.y_input))
         l_n_step_dq = tf.reduce_mean(tf.squared_difference(self.Q_select, self.n_step_y_input))
+        # l_n_step_dq = self.loss_n_step_dq(self.Q_select, self.n_step_y_input)
         l_jeq = self.loss_jeq(self.Q_select)
         l_l2 = tf.reduce_sum([tf.reduce_mean(reg_l) for reg_l in tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)])
         return self.ISWeights * tf.reduce_sum([l*lam for l, lam in zip([l_dq, l_n_step_dq, l_jeq, l_l2], self.config.LAMBDA)])
@@ -161,20 +171,24 @@ class DQfD:
         print("Model restored.")
 
     def perceive(self, transition):
-        # epsilon->FINAL_EPSILON(min_epsilon)
-        self.epsilon = max(self.config.FINAL_EPSILON, self.epsilon * self.config.EPSILIN_DECAY)
         self.replay_memory.store(np.array(transition))
+        # epsilon->FINAL_EPSILON(min_epsilon)
+        if self.replay_memory.full():
+            self.epsilon = max(self.config.FINAL_EPSILON, self.epsilon * self.config.EPSILIN_DECAY)
 
     def train_Q_network(self, pre_train=False, update=True):
         """
-        :param pre_train: True means should sample from demo_buffer isntead of replay_buffer
+        :param pre_train: True means should sample from demo_buffer instead of replay_buffer
         :param update: True means the action "update_target_net" executes outside, and can be ignored in the function
         """
-        if not pre_train and len(self.replay_memory) < self.config.START_TRAINING:
+        if not pre_train and not self.replay_memory.full():  # sampling should be executed AFTER replay_memory filled
             return
         self.time_step += 1
 
-        tree_idxes, minibatch, ISWeights = self.replay_memory.sample(self.config.BATCH_SIZE)
+        assert self.replay_memory.full() or pre_train
+
+        actual_memory = self.demo_memory if pre_train else self.replay_memory
+        tree_idxes, minibatch, ISWeights = actual_memory.sample(self.config.BATCH_SIZE)
 
         np.random.shuffle(minibatch)
         state_batch = [data[0] for data in minibatch]

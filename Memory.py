@@ -5,6 +5,7 @@ np.random.seed(1)
 tf.set_random_seed(1)
 
 
+# Sampling should not execute when the tree is not full !!!
 class SumTree(object):
     data_pointer = 0
 
@@ -13,14 +14,13 @@ class SumTree(object):
         self.tree = np.zeros(2 * capacity - 1)  # stores not probabilities but priorities !!!
         self.data = np.zeros(capacity, dtype=object)  # stores transitions
         self.permanent_data = permanent_data  # numbers of data which never be replaced, for demo data protection
-        assert 0 <= self.permanent_data < self.capacity  # equal is also illegal
+        assert 0 <= self.permanent_data <= self.capacity  # equal is also illegal
         self.full = False
 
     def __len__(self):
         return self.capacity if self.full else self.data_pointer
 
     def add(self, p, data):
-        # print(len(data))
         tree_idx = self.data_pointer + self.capacity - 1
         self.data[self.data_pointer] = data
         self.update(tree_idx, p)
@@ -61,7 +61,7 @@ class SumTree(object):
 class Memory(object):
 
     epsilon = 0.001  # small amount to avoid zero priority
-    demo_epsilon = 1.0  # extra
+    demo_epsilon = 1.0  # 1.0  # extra
     alpha = 0.4  # [0~1] convert the importance of TD error to priority
     beta = 0.6  # importance-sampling, from initial value increasing to 1
     beta_increment_per_sampling = 0.001
@@ -74,6 +74,9 @@ class Memory(object):
     def __len__(self):
         return len(self.tree)
 
+    def full(self):
+        return self.tree.full
+
     def store(self, transition):
         max_p = np.max(self.tree.tree[-self.tree.capacity:])
         if max_p == 0:
@@ -81,18 +84,16 @@ class Memory(object):
         self.tree.add(max_p, transition)  # set the max_p for new transition
 
     def sample(self, n):
+        assert self.full()
         b_idx = np.empty((n,), dtype=np.int32)
         b_memory = np.empty((n, self.tree.data[0].size), dtype=object)
         ISWeights = np.empty((n, 1))
         pri_seg = self.tree.total_p / n
         self.beta = np.min([1., self.beta + self.beta_increment_per_sampling])
 
-        if self.tree.full:
-            min_prob = np.min(self.tree.tree[-self.tree.capacity:]) / self.tree.total_p
-        else:
-            # for sampling when memory is not full
-            min_prob = np.min(self.tree.tree[self.tree.capacity-1:self.tree.capacity-1+self.tree.data_pointer]) / self.tree.total_p
+        min_prob = np.min(self.tree.tree[-self.tree.capacity:]) / self.tree.total_p
         assert min_prob > 0
+
         for i in range(n):
             v = np.random.uniform(pri_seg * i, pri_seg * (i + 1))
             idx, p, data = self.tree.get_leaf(v)  # note: idx is the index in self.tree.tree
@@ -110,18 +111,6 @@ class Memory(object):
         ps = np.power(clipped_errors, self.alpha)
         for ti, p in zip(tree_idxes, ps):
             self.tree.update(ti, p)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

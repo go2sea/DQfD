@@ -1,2 +1,2 @@
-model_checkpoint_path: "/Users/mahailong/Code/DQfD/model/DQfD_model"
-all_model_checkpoint_paths: "/Users/mahailong/Code/DQfD/model/DQfD_model"
+model_checkpoint_path: "/home/mi/Code/DQfD/model/DQfD_model"
+all_model_checkpoint_paths: "/home/mi/Code/DQfD/model/DQfD_model"
