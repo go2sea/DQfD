@@ -61,10 +61,10 @@ class DQfDDDQN:
         print('pre-training ...')
         for i in range(self.config.PRETRAIN_STEPS):
             if i % 200 == 0:
-                print i, 'th step of pre-trianing ...'
+                print('{} th step of pre-trianing ...'.format(i))
             self.train_Q_network(pre_train=True)
         self.time_step = 0
-        print 'pre-train finish ...'
+        print('pre-train finish ...')
 
     # TODO: How to add the variable created in tf.layers.dense to the customed collection？
     # def build_layers(self, state, collections, units_1, units_2, w_i, b_i, regularizer=None):
@@ -85,7 +85,7 @@ class DQfDDDQN:
     def build_layers(self, state, c_names, units_1, units_2, w_i, b_i, reg=None):
         a_d = self.action_dim
         with tf.variable_scope('l1'):
-            w1 = tf.get_variable('w1', [a_d, units_1], initializer=w_i, collections=c_names, regularizer=reg)
+            w1 = tf.get_variable('w1', [self.state_dim, units_1], initializer=w_i, collections=c_names, regularizer=reg)
             b1 = tf.get_variable('b1', [1, units_1], initializer=b_i, collections=c_names, regularizer=reg)
             dense1 = tf.nn.relu(tf.matmul(state, w1) + b1)
         with tf.variable_scope('l2'):
